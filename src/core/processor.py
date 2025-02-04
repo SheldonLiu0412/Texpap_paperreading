@@ -15,8 +15,13 @@ class PaperProcessor:
         self.client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
         self.ai_helper = AIHelper(self.client)
         
-    def process_pdf(self, pdf_path: str) -> Tuple[str, str]:
-        """处理PDF文件的主函数"""
+    def process_pdf(self, pdf_path: str) -> Tuple[str, str, str]:
+        """处理PDF文件的主函数
+        
+        Returns:
+            Tuple[str, str, str]: 返回(tex文件路径, pdf文件路径, markdown文件路径)
+            注意：如果PDF编译失败，pdf_path将为None
+        """
         try:
             # 获取原始文件名并设置日志
             original_filename = os.path.basename(pdf_path)
@@ -32,13 +37,13 @@ class PaperProcessor:
                 raise Exception("无法提取PDF文本")
             logger.info("PDF文本提取成功")
 
-            # 分块处理
+            # 分块处理（这里我把识别关了，即设置为0）
             logger.info("开始文本分块")
             chunks = TextProcessor.split_into_chunks(text)
             if len(chunks) > MAX_CHUNKS:
                 logger.error(f"文档过长，超出处理限制（当前块数：{len(chunks)}，最大限制：{MAX_CHUNKS}）")
                 raise Exception("文档过长，超出处理限制")
-            if len(chunks) <= 1:
+            if len(chunks) <= 0:
                 logger.error("识别到内容非论文")
                 raise Exception("识别到内容非论文")
 
@@ -95,12 +100,22 @@ class PaperProcessor:
             tex_path = LatexHandler.save_to_tex(cleaned_text, file_prefix, logger)
             logger.info(f"TEX文件保存成功：{tex_path}")
             
-            logger.info("开始编译PDF文件")
-            pdf_path = LatexHandler.compile_tex(tex_path, original_filename, logger)
-            logger.info(f"PDF文件编译成功：{pdf_path}")
-
-            logger.info("处理完成")
-            return tex_path, pdf_path
+            # 生成Markdown文件
+            logger.info("开始生成Markdown文件")
+            md_path = LatexHandler.convert_to_markdown(cleaned_text, file_prefix, logger)
+            logger.info(f"Markdown文件生成成功：{md_path}")
+            
+            # 尝试编译PDF，但不中断执行
+            pdf_path = None
+            try:
+                logger.info("开始编译PDF文件")
+                pdf_path = LatexHandler.compile_tex(tex_path, original_filename, logger)
+                logger.info(f"PDF文件编译成功：{pdf_path}")
+            except Exception as e:
+                logger.error(f"PDF编译失败：{str(e)}")
+                logger.info("继续执行，返回其他文件路径")
+            
+            return tex_path, pdf_path, md_path
 
         except Exception as e:
             if 'logger' in locals():
