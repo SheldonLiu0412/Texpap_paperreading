@@ -7,7 +7,7 @@
 - PDF文本提取和预处理
 - 智能分节和章节处理
 - 公式和数学符号的AI解读
-- 自动生成LaTeX文档
+- 输出包含PDF、Latex、Markdown格式解读
 
 ## 项目结构
 
@@ -65,6 +65,12 @@ python main.py
 3. 查看结果：
 - 解读结果将保存在 `output` 目录下
 - 处理日志将保存在 `logs` 目录下
+
+## 示例展示
+
+下图展示了一个论文解读的示例结果：
+
+![Texpap论文解读示例](https://imagehosting-1325812115.cos.ap-shanghai.myqcloud.com/Texpap_paperreading_demo.jpg)
 
 ## 输出文件
 
